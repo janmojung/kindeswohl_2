@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Folgen von Kindesmisshandlung</title>
+    <script src="https://bernardo-castilho.github.io/DragDropTouch/DragDropTouch.js"></script>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #34495e;
+            --accent: #c0392b; 
+            --bg: #ecf0f1;
+            --card-bg: #ffffff;
+            --text: #2c3e50;
+            --text-light: #5a5a5a;
+        }
+
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 20px; line-height: 1.6; }
+        
+        /* HEADER */
+        header { max-width: 1200px; margin: 0 auto 30px auto; text-align: center; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 15px rgba(0,0,0,0.05); }
+        h1 { margin: 0 0 10px 0; color: var(--primary); font-size: 2.0rem; }
+        
+        .ref { color: var(--text-light); font-size: 0.88rem; font-style: italic; }
+
+        /* STATUS BAR (TABS) */
+        .status-bar { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; margin-top: 15px;}
+        .status-step { 
+            padding: 10px 20px; border-radius: 30px; background: #bdc3c7; font-weight: 600; 
+            font-size: 0.95rem; color: #fff; cursor: pointer; transition: 0.3s;
+        }
+        .status-step:hover { background: #95a5a6; }
+        .status-step.active { background: var(--primary); box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .status-step.completed { background: #27ae60; }
+
+        /* SECTIONS */
+        .section { display: none; max-width: 1400px; margin: 0 auto; animation: fadeIn 0.4s ease-out; }
+        .section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* GRID FÜR KARTEN (Reiter 1) */
+        .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 25px; margin-bottom: 60px; }
+        
+        /* CARD STYLING */
+        .card-wrapper { perspective: 1000px; height: 650px; position: relative; } 
+        .card { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.6s; cursor: pointer; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); background: white; border-bottom: 3px solid var(--primary); }
+        .card.flipped { transform: rotateY(180deg); }
+        .face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 8px; box-sizing: border-box; display: flex; flex-direction: column; }
+        .front { align-items: center; justify-content: center; background: #fff; padding: 30px; text-align: center; }
+        .num-badge { background: var(--primary); color: white; width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-bottom: 20px; font-size: 0.9rem; }
+        .term-title { font-size: 1.4rem; font-weight: 700; color: var(--primary); margin-bottom: 10px; line-height: 1.3; }
+        .back { transform: rotateY(180deg); background: #fff; padding: 30px 30px 90px 30px; overflow-y: auto; text-align: left; border-top: 5px solid var(--accent); }
+        .back::-webkit-scrollbar { width: 6px; }
+        .back::-webkit-scrollbar-thumb { background-color: #bdc3c7; }
+        .back p { font-size: 0.95rem; color: #333; margin: 0 0 12px 0; line-height: 1.5; }
+
+        /* BUTTONS */
+        .btn-check { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 10; background: #ecf0f1; color: #7f8c8d; border: 1px solid #bdc3c7; padding: 10px 25px; border-radius: 50px; cursor: pointer; font-weight: bold; font-size: 0.9rem; transition: 0.2s; width: 80%; }
+        .btn-check:hover { background: var(--primary); color: white; border-color: var(--primary); }
+        .btn-check.done { background: #27ae60; color: white; border-color: #27ae60; cursor: default; }
+        .nav-btn { display: block; margin: 40px auto; padding: 15px 50px; background: var(--primary); color: white; border: none; border-radius: 4px; font-size: 1.1rem; cursor: pointer; transition: 0.2s; font-weight: bold; }
+        .nav-btn:hover { background-color: var(--secondary); }
+        
+        /* QUIZ (Reiter 2) */
+        .interactive-box { background: white; padding: 40px; border-radius: 8px; max-width: 850px; margin: 0 auto; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        .options-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 25px; }
+        .choice-btn { padding: 15px; border: 1px solid #ddd; background: white; font-size: 0.95rem; cursor: pointer; border-radius: 4px; text-align: left; transition: 0.2s; color: #333; line-height: 1.4;}
+        .choice-btn:hover { background: #f9f9f9; border-color: var(--primary); }
+        .choice-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        /* MATRIX (Reiter 3) */
+        .matrix-container { display: flex; gap: 20px; align-items: flex-start; margin-top: 20px; }
+        .pool-zone { width: 300px; background: white; padding: 15px; border-radius: 8px; min-height: 500px; border: 2px solid #bdc3c7; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .matrix-grid { flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+        .matrix-col { background: white; padding: 15px; border-radius: 8px; min-height: 500px; border: 2px dashed #bdc3c7; display: flex; flex-direction: column; gap: 8px;}
+        .matrix-col h3 { font-size: 1.05rem; text-align: center; color: var(--primary); margin-top: 0; padding-bottom: 10px; border-bottom: 2px solid #eee; margin-bottom: 5px; }
+        
+        .draggable-item { 
+            background: #f7f9fa; border: 1px solid #bdc3c7; border-left: 4px solid var(--primary); 
+            padding: 10px 12px; border-radius: 4px; cursor: grab; font-size: 0.85rem; font-weight: 600; 
+            touch-action: none; transition: 0.2s background; display: flex; align-items: center; gap: 10px;
+        }
+        .draggable-item:active { cursor: grabbing; }
+        .badge-small { background: var(--primary); color: white; border-radius: 50%; width: 22px; height: 22px; display: inline-flex; justify-content: center; align-items: center; font-size: 0.7rem; flex-shrink: 0;}
+
+        /* Lösungsfarben für Matrix */
+        .cat-1-color { border-left-color: #27ae60 !important; background: #e8f8f5 !important; } /* Direkt - Grün */
+        .cat-2-color { border-left-color: #f39c12 !important; background: #fef9e7 !important; } /* Indirekt - Gelb */
+        .cat-3-color { border-left-color: #e74c3c !important; background: #fdedec !important; } /* Nicht - Rot */
+
+        @media (max-width: 900px) {
+            .matrix-container { flex-direction: column; }
+            .pool-zone { width: 100%; min-height: 200px; }
+            .matrix-grid { grid-template-columns: 1fr; width: 100%; }
+            .matrix-col { min-height: 150px; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Folgen von Kindesmisshandlung</h1>
+    <div class="status-bar">
+        <div class="status-step active" id="tab1" onclick="switchSection(1)">1. Gruppenarbeit: Befunde</div>
+        <div class="status-step" id="tab2" onclick="switchSection(2)">2. Gemeinsames Quiz</div>
+        <div class="status-step" id="tab3" onclick="switchSection(3)">3. Übersetzungs-Matrix</div>
+    </div>
+</header>
+
+<div id="sec1" class="section active">
+    <div style="text-align:center; margin-bottom:30px; max-width: 900px; margin-left: auto; margin-right: auto;">
+        <p>Bitte studieren Sie die Ihnen zugeteilten Forschungsergebnisse auf den Karten.</p>
+    </div>
+    <div class="cards-grid" id="cardGrid"></div>
+    <button class="nav-btn" onclick="switchSection(2)">Alle bereit? Weiter zum Quiz ➔</button>
+</div>
+
+<div id="sec2" class="section">
+    <div class="interactive-box">
+        <div id="quizContent">
+            <h2 style="color: var(--primary); margin-top:0;">Wissens-Check</h2>
+            <h3 id="quizQuestion" style="min-height: 60px; font-size:1.15rem;">Lädt...</h3>
+            <div class="options-grid" id="quizOptions"></div>
+            <button id="nextQuestionBtn" class="nav-btn" style="display:none; margin-top:25px; width:100%;" onclick="nextQuestion()">Zur nächsten Frage ➔</button>
+        </div>
+        <div id="finalScreen" style="display:none; text-align:center;">
+            <div style="font-size:4rem; margin-bottom:10px;">💬</div>
+            <h2 style="margin-bottom:10px;">Wissens-Check beendet</h2>
+            <p style="font-size:1.1rem;">Sie haben die zentralen Zusammenhänge erfolgreich gesichert.</p>
+            <button class="nav-btn" style="display:inline-block; margin-top:20px;" onclick="switchSection(3)">Weiter zur Praxis-Matrix ➔</button>
+        </div>
+    </div>
+</div>
+
+<div id="sec3" class="section">
+    <div style="text-align:center; margin-bottom:20px; max-width: 900px; margin-left: auto; margin-right: auto;">
+        <h2 style="color: var(--primary); margin-top:0;">Von der Klinik ins Klassenzimmer</h2>
+        <p>Sie haben die klinischen Folgen aus der Forschung kennengelernt. Lehrkräfte sind jedoch keine Therapeuten. Filtern Sie die 14 Befunde: <b>Welche dieser Folgen können Sie direkt im Unterricht beobachten? Welche eher nicht?</b> Ziehen Sie die Begriffe in die passenden Spalten.</p>
+    </div>
+
+    <div class="matrix-container">
+        <div id="matrix-pool" class="pool-zone drop-zone">
+            <div style="text-align:center; font-weight:bold; color:#7f8c8d; margin-bottom:15px; border-bottom: 1px solid #eee; padding-bottom:10px;">Alle 14 Folgen</div>
+        </div>
+
+        <div class="matrix-grid">
+            <div class="matrix-col drop-zone" id="col-direkt" style="border-color: #27ae60;">
+                <h3 style="color: #27ae60;">Direkt im Schulalltag beobachtbar</h3>
+            </div>
+            <div class="matrix-col drop-zone" id="col-indirekt" style="border-color: #f39c12;">
+                <h3 style="color: #f39c12;">Indirekt (als Symptom / Vorbote)</h3>
+            </div>
+            <div class="matrix-col drop-zone" id="col-langzeit" style="border-color: #e74c3c;">
+                <h3 style="color: #e74c3c;">Nicht beobachtbar / Spätere Lebensphase</h3>
+            </div>
+        </div>
+    </div>
+
+    <button class="nav-btn" style="background-color: #34495e;" onclick="solveMatrix()">Lösungsvorschlag anzeigen</button>
+</div>
+
+<script>
+    // --- DATEN (Vereinfachte wissenschaftliche Befunde, ohne Spekulationen) ---
+    const cardsData = [
+        {
+            id: 1, cat: 1,
+            title: "Akademische Leistung",
+            content: `
+                <p>Unterschiedliche Formen der Kindesmisshandlung korrelieren mit geringeren akademischen Leistungen. Dies zeigt sich insbesondere in den Fächern Sprachen und Mathematik <span class="ref">(Zhang et al., 2025)</span>.</p>
+                <p>Psychische Misshandlung und Vernachlässigung wirken sich dabei stärker auf die Leistung aus als andere Misshandlungsarten. Zudem sind Jungen und jüngere Kinder tendenziell stärker von diesen Leistungseinbußen betroffen.</p>`
+        },
+        {
+            id: 2, cat: 3,
+            title: "Physische Gesundheitsfolgen",
+            content: `
+                <p>Übersichtsarbeiten belegen, dass Kindesmisshandlung mit erhöhten Risiken für diverse körperliche Erkrankungen einhergeht. Hierzu zählen Herz-Kreislauf- und Atemwegserkrankungen, Magen-Darm-Störungen, Diabetes, chronische Schmerzsyndrome und Krebs <span class="ref">(u. a. Fry et al., 2012; Norman et al., 2012; Huang et al., 2015; Davis et al., 2005)</span>.</p>
+                <p>Biologisch erklärt wird dies unter anderem durch eine chronische Fehlregulation der Stressachse <span class="ref">(Frodl & O'Keane, 2013)</span> und ein dauerhaft entzündliches Milieu des Immunsystems <span class="ref">(Baumeister et al., 2016)</span>. Frauen weisen im Durchschnitt schlechtere gesundheitliche Ergebnisse auf als Männer <span class="ref">(Wegman & Steltler, 2009)</span>.</p>`
+        },
+        {
+            id: 3, cat: 2,
+            title: "Depression & Borderline",
+            content: `
+                <p>Das Risiko, eine Depression zu entwickeln, ist bei betroffenen Personen doppelt so hoch wie bei Kontrollgruppen <span class="ref">(Alvarez-Segura et al., 2014; Choi & Sikkema, 2016)</span>. Die Störung tritt meist früher auf, verläuft häufiger chronisch und ist schwerer zu behandeln.</p>
+                <p>Zusätzlich besteht eine signifikante Assoziation mit der Entwicklung einer Borderline-Persönlichkeitsstörung bereits im Jugendalter <span class="ref">(Winsper et al., 2016)</span>. Das Risiko für Depressionen steigt besonders bei emotionalem und sexuellem Missbrauch und manifestiert sich statistisch deutlicher bei Frauen <span class="ref">(Nelson et al., 2017)</span>.</p>`
+        },
+        {
+            id: 4, cat: 2,
+            title: "Angststörungen",
+            content: `
+                <p>Meta-Analysen zeigen, dass eine Misshandlungsvorgeschichte das statistische Risiko für Angststörungen verdoppelt <span class="ref">(Li et al., 2016; Lindert et al., 2014)</span>.</p>
+                <p>Im Gegensatz zu einigen anderen psychischen Störungsbildern ist dieses signifikant erhöhte Risiko für Ängste mit <i>allen</i> dokumentierten Misshandlungsarten (Vernachlässigung, psychische, physische und sexuelle Gewalt) assoziiert.</p>`
+        },
+        {
+            id: 5, cat: 2,
+            title: "Essstörungen und Adipositas",
+            content: `
+                <p>Diverse Misshandlungsformen sind signifikant mit der späteren Entwicklung von Essstörungen sowie Adipositas (Fettleibigkeit) assoziiert <span class="ref">(u. a. Caslini et al., 2016; Danese, 2014)</span>.</p>
+                <p>Hierzu zählen Störungsbilder wie Bulimie, Binge-Eating (Essanfälle) und Anorexie (Magersucht) <span class="ref">(Smolak & Murnen, 2002)</span>. Eine besonders starke statistische Verbindung besteht zwischen emotionalem Missbrauch in der Kindheit und späteren Essstörungen <span class="ref">(Hemmingsson et al., 2014; Pignatelli et al., 2017)</span>.</p>`
+        },
+        {
+            id: 6, cat: 2,
+            title: "Alkohol- und Drogenkonsum",
+            content: `
+                <p>Körperlicher und sexueller Missbrauch sowie Vernachlässigung stehen in einem signifikanten Zusammenhang mit Substanzkonsumstörungen (Drogen und Alkohol) im Jugend- und Erwachsenenalter <span class="ref">(u. a. Butt et al., 2011)</span>.</p>
+                <p>Die Trauma-Vorgeschichte ist dabei nicht nur mit einem generell erhöhten Konsumrisiko verbunden, sondern auch mit einem wesentlich früheren Beginn des Konsums sowie schwerwiegenderen Abhängigkeitsmustern <span class="ref">(Draucker & Mazurczyk, 2013; Tonmyr et al., 2010)</span>.</p>`
+        },
+        {
+            id: 7, cat: 1,
+            title: "Kognitive Defizite",
+            content: `
+                <p>Über alle Lebensphasen hinweg ist Kindesmisshandlung messbar mit globalen kognitiven Defiziten assoziiert <span class="ref">(Irigaray et al., 2013; Veltman & Browne, 2001)</span>.</p>
+                <p>Diese Defizite zeigen sich insbesondere im Bereich des Gedächtnisses sowie bei den sogenannten exekutiven Funktionen (dazu zählen Planung, Impulskontrolle und Handlungssteuerung). Schwere Misshandlungen und eine lange Expositionsdauer vergrößern diese Defizite, besonders wenn zusätzlich eine Posttraumatische Belastungsstörung (PTBS) im Kindesalter auftritt <span class="ref">(Masson et al., 2016)</span>.</p>`
+        },
+        {
+            id: 8, cat: 1,
+            title: "Sprachentwicklung",
+            content: `
+                <p>Betroffene Kinder weisen signifikante Auffälligkeiten in der Sprachentwicklung auf. Insbesondere bei den expressiven Sprachfähigkeiten (der Fähigkeit, eigene Gedanken und Gefühle verbal auszudrücken) zeigen sich deutliche Defizite <span class="ref">(Lum et al., 2015; Veltman & Browne, 2001)</span>.</p>
+                <p>Befunde deuten darauf hin, dass jüngere Kinder in diesem Bereich gravierendere Verzögerungen aufweisen als ältere Kinder <span class="ref">(Sylvestre et al., 2016)</span>.</p>`
+        },
+        {
+            id: 9, cat: 2,
+            title: "Bindungsstil",
+            content: `
+                <p>Frühe Misshandlungserfahrungen sind signifikant mit der Entwicklung von unsicheren Bindungsmustern assoziiert <span class="ref">(Baer & Martinez, 2006; Cyr et al., 2010)</span>.</p>
+                <p>Die hierzu vorliegenden Befunde beziehen sich vorwiegend auf Kinder unter vier Jahren, die insbesondere in einem benachteiligten Umfeld körperlichen oder emotionalen Missbrauch sowie Vernachlässigung erfahren haben.</p>`
+        },
+        {
+            id: 10, cat: 1,
+            title: "Antisoziales Verhalten / Aggression",
+            content: `
+                <p>Betroffene Personen zeigen über alle Lebensphasen hinweg eine deutlich erhöhte Neigung zu antisozialem Verhalten und Aggression <span class="ref">(Fry et al., 2012; Maniglio, 2014)</span>. Das Risiko steigt bei schweren Misshandlungsformen.</p>
+                <p>Zudem belegen Studien eine biologische Gen-Umwelt-Interaktion: Die Assoziation zwischen Misshandlung und späterer Aggression ist bei Personen mit einer niedrigaktiven Ausprägung des MAOA-Gens (welches den Abbau von aggressionsrelevanten Neurotransmittern steuert) messbar stärker <span class="ref">(Byrd & Manuck, 2014)</span>.</p>`
+        },
+        {
+            id: 11, cat: 3,
+            title: "Partnergewalt",
+            content: `
+                <p>Betroffene von körperlichem und sexuellem Missbrauch sind später häufiger in gewalttätige Paarkonflikte oder sexuelle Übergriffe involviert <span class="ref">(Hanson & Slater, 1988; Jespersen et al., 2009)</span>.</p>
+                <p>Körperliche Misshandlung in der Kindheit erhöht zudem das Risiko massiv, im späteren Erwachsenenalter selbst Opfer von Partnergewalt zu werden. Dieses Risiko ist statistisch bei Frauen besonders stark ausgeprägt <span class="ref">(Smith-Marek et al., 2015)</span>.</p>`
+        },
+        {
+            id: 12, cat: 3,
+            title: "Riskantes Sexualverhalten",
+            content: `
+                <p>Insbesondere sexueller Missbrauch ist eng mit späterem riskantem Sexualverhalten assoziiert <span class="ref">(Abajobir et al., 2017; Fry et al., 2012)</span>.</p>
+                <p>Dazu gehören früher oder ungeschützter Geschlechtsverkehr, häufig wechselnde Partner sowie ein stark erhöhtes Risiko für sexuelle Reviktimisierung (erneute Ausbeutung) <span class="ref">(Noll et al., 2009)</span>. Dies geht mit einer erhöhten Rate an Teenager-Schwangerschaften und sexuell übertragbaren Krankheiten einher <span class="ref">(Draucker & Mazurczyk, 2013)</span>.</p>`
+        },
+        {
+            id: 13, cat: 3,
+            title: "Erziehungsprobleme",
+            content: `
+                <p>Eine eigene Misshandlungsvorgeschichte ist mit späteren Schwierigkeiten in der eigenen Elternrolle assoziiert <span class="ref">(Hughes & Cossar, 2016; Thornberry et al., 2012)</span>.</p>
+                <p>Diese äußern sich in einem erhöhten Stressempfinden, verminderter Sensibilität für kindliche Bedürfnisse und potenziell missbräuchlichen Erziehungspraktiken. Häufig wird dieser Zusammenhang laut Forschungen durch mütterliche Depression und eine generell erhöhte Stressreaktivität vermittelt <span class="ref">(Vaillancourt et al., 2017)</span>.</p>`
+        },
+        {
+            id: 14, cat: 2,
+            title: "Selbstverletzung und Suizidalität",
+            content: `
+                <p>Kindesmisshandlung ist signifikant mit selbstschädigendem und suizidalem Verhalten im Jugend- und Erwachsenenalter assoziiert <span class="ref">(Fry et al., 2012; Norman et al., 2012)</span>. Dies schließt nicht-suizidale Selbstverletzung, Suizidgedanken und Suizidversuche ein.</p>
+                <p>Das Risiko steigt bei multiplen und schweren Misshandlungsformen. In wissenschaftlichen Studien wurde ein geringes Selbstwertgefühl als wesentlicher vermittelnder Faktor zwischen der Traumaerfahrung und der späteren Selbstverletzung identifiziert <span class="ref">(Evans et al., 2005)</span>.</p>`
+        }
+    ];
+
+    const quizData = [
+        { q: "Wie wirkt sich Kindesmisshandlung im Durchschnitt auf die schulische Leistung aus?", opts: ["Sie führt oft zu einer Überkompensation und besseren Noten.", "Betroffene zeigen häufig schwächere Leistungen, besonders in Kernfächern.", "Sie hat in der Regel keine messbaren Auswirkungen auf das Lernen."], corr: 1 },
+        { q: "Welche langfristigen körperlichen Folgen sind typischerweise mit Kindesmisshandlung assoziiert?", opts: ["Ausschließlich akute Infektionskrankheiten im Kindesalter.", "Ein erhöhtes Risiko für diverse chronische Erkrankungen (z. B. Herz-Kreislauf- oder Atemwegsbeschwerden).", "Ein überdurchschnittlich schnelles körperliches Wachstum."], corr: 1 },
+        { q: "In welchem Zusammenhang stehen Kindesmisshandlung und Depressionen?", opts: ["Das Risiko zu erkranken ist deutlich erhöht, und die Störung tritt oft früher auf.", "Es besteht kein nachweisbarer Zusammenhang.", "Depressionen treten bei Betroffenen seltener auf, da sie emotional abgehärtet sind."], corr: 0 },
+        { q: "Welche Besonderheit zeigt sich beim erhöhten Risiko für Angststörungen in Bezug auf die Misshandlungsart?", opts: ["Es ist ausschließlich mit körperlicher Gewalt assoziiert.", "Es tritt nur nach extremen Vernachlässigungserfahrungen auf.", "Es ist signifikant mit allen dokumentierten Misshandlungsarten assoziiert."], corr: 2 },
+        { q: "Welche Aussage trifft auf den Zusammenhang von Misshandlung und Essverhalten zu?", opts: ["Misshandlung schützt vor der Entwicklung von Übergewicht.", "Diverse Misshandlungsformen erhöhen das Risiko für Essstörungen und Adipositas (Fettleibigkeit) erheblich.", "Es gibt nur eine Assoziation bei männlichen Jugendlichen."], corr: 1 },
+        { q: "Wie beeinflusst eine Misshandlungsvorgeschichte häufig den Konsum von Alkohol und Drogen?", opts: ["Der Konsum beginnt oft wesentlich früher und zeigt schwerwiegendere Abhängigkeitsmuster.", "Betroffene konsumieren seltener Suchtmittel aus Angst vor Kontrollverlust.", "Der Konsum beschränkt sich meist auf eine kurze Experimentierphase in der Pubertät."], corr: 0 },
+        { q: "Welche kognitiven Bereiche sind bei betroffenen Kindern häufig beeinträchtigt?", opts: ["Vor allem das Gedächtnis und die Handlungssteuerung (exekutive Funktionen).", "Ausschließlich das räumliche Denken.", "Besonders die musikalische und kreative Begabung."], corr: 0 },
+        { q: "Welche Auffälligkeit zeigt sich häufig in der Sprachentwicklung misshandelter Kinder?", opts: ["Sie lernen Fremdsprachen deutlich schneller als Gleichaltrige.", "Sie sprechen meist fehlerfrei, aber sehr leise.", "Es fällt ihnen oft schwer, eigene Gedanken und Gefühle verbal angemessen auszudrücken."], corr: 2 },
+        { q: "Wie wirken sich frühe Misshandlungserfahrungen in der Regel auf die Beziehungsgestaltung aus?", opts: ["Sie stärken die Fähigkeit, tiefe Freundschaften zu schließen.", "Sie führen sehr häufig zur Entwicklung von unsicheren Bindungsmustern.", "Sie haben keinen Einfluss auf die spätere Beziehungsgestaltung."], corr: 1 },
+        { q: "Welcher Faktor kann laut Studien die Neigung zu aggressivem Verhalten nach einer Misshandlung noch verstärken?", opts: ["Eine bestimmte biologische Gen-Ausprägung im Zusammenspiel mit der Umwelt (Gen-Umwelt-Interaktion).", "Der regelmäßige Besuch von Sportvereinen.", "Eine überdurchschnittlich hohe Intelligenz."], corr: 0 },
+        { q: "Welche langfristigen Folgen kann Misshandlung für spätere Partnerschaften haben?", opts: ["Betroffene führen in der Regel überdurchschnittlich harmonische Beziehungen.", "Betroffene werden im Erwachsenenalter häufiger in gewalttätige Paarkonflikte involviert.", "Es kommt fast nie zur Gründung einer eigenen Familie."], corr: 1 },
+        { q: "Welches Risiko ist mit einem riskanten Sexualverhalten als Folge von sexuellem Missbrauch eng verbunden?", opts: ["Eine erhöhte Gefahr für erneute sexuelle Ausbeutung (Reviktimisierung) und Teenager-Schwangerschaften.", "Eine vollständige emotionale Unabhängigkeit.", "Keines, es handelt sich lediglich um eine harmlose Phase."], corr: 0 },
+        { q: "Warum haben Menschen mit einer eigenen Misshandlungsvorgeschichte oft Schwierigkeiten in der eigenen Elternrolle?", opts: ["Weil sie grundsätzlich kein Interesse an Kindern haben.", "Weil sie oft unter erhöhtem Stress leiden und weniger sensibel für kindliche Bedürfnisse sind.", "Weil Behörden ihnen die Erziehung prinzipiell verbieten."], corr: 1 },
+        { q: "Welcher psychologische Faktor spielt eine wesentliche vermittelnde Rolle bei der Entwicklung von selbstverletzendem Verhalten nach Misshandlungen?", opts: ["Ein stark ausgeprägter Perfektionismus.", "Ein radikal vermindertes Selbstwertgefühl.", "Ein hohes Bedürfnis nach Aufmerksamkeit der Lehrkräfte."], corr: 1 }
+    ];
+
+    let quizIndex = 0;
+    let draggedItem = null;
+
+    // --- INITIALISIERUNG ---
+    document.addEventListener('DOMContentLoaded', () => {
+        // 1. Karten generieren (Reiter 1)
+        const grid = document.getElementById('cardGrid');
+        cardsData.forEach((item) => {
+            let el = document.createElement('div');
+            el.className = 'card-wrapper';
+            el.innerHTML = `
+                <div class="card" onclick="this.classList.toggle('flipped')">
+                    <div class="face front">
+                        <div class="num-badge">${item.id}</div>
+                        <div class="term-title">${item.title}</div>
+                        <div style="margin-top:auto; font-size:0.85rem; color:#95a5a6;">Details anzeigen ↻</div>
+                    </div>
+                    <div class="face back">
+                        ${item.content}
+                    </div>
+                </div>
+                <button class="btn-check" onclick="markDone(this)">Gelesen & Verstanden</button>
+            `;
+            grid.appendChild(el);
+        });
+
+        // 2. Matrix-Karten generieren (Reiter 3)
+        const pool = document.getElementById('matrix-pool');
+        const shuffledMatrixData = [...cardsData].sort(() => Math.random() - 0.5);
+        shuffledMatrixData.forEach(item => {
+            let el = document.createElement('div');
+            el.className = 'draggable-item';
+            el.draggable = true;
+            el.dataset.cat = item.cat;
+            el.innerHTML = `<span class="badge-small">${item.id}</span> ${item.title}`;
+            
+            el.addEventListener('dragstart', function(e) {
+                draggedItem = this;
+                setTimeout(() => this.style.display = "none", 0);
+            });
+            el.addEventListener('dragend', function(e) {
+                setTimeout(() => this.style.display = "flex", 0);
+                draggedItem = null;
+            });
+            pool.appendChild(el);
+        });
+
+        // 3. Drop Zones einrichten
+        document.querySelectorAll('.drop-zone').forEach(zone => {
+            zone.addEventListener('dragover', e => e.preventDefault());
+            zone.addEventListener('drop', handleDrop);
+        });
+    });
+
+    // --- TAB NAVIGATION ---
+    function switchSection(secNum) {
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.getElementById('sec' + secNum).classList.add('active');
+        
+        document.querySelectorAll('.status-step').forEach(s => s.classList.remove('active'));
+        document.getElementById('tab' + secNum).classList.add('active');
+        
+        if(secNum >= 2) document.getElementById('tab1').classList.add('completed');
+        if(secNum === 3) document.getElementById('tab2').classList.add('completed');
+        
+        if(secNum === 2 && quizIndex === 0) {
+            loadQuiz();
+        }
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function markDone(btn) {
+        if (btn.classList.contains('done')) return;
+        btn.classList.add('done');
+        btn.innerHTML = "✔ Gelesen";
+    }
+
+    // --- REITER 2 LOGIK (QUIZ) ---
+    function loadQuiz() {
+        if(quizIndex >= quizData.length) {
+            document.getElementById('quizContent').style.display = 'none';
+            document.getElementById('finalScreen').style.display = 'block';
+            return;
+        }
+        const data = quizData[quizIndex];
+        document.getElementById('quizQuestion').innerText = data.q;
+        const optsDiv = document.getElementById('quizOptions');
+        optsDiv.innerHTML = "";
+        data.opts.forEach((txt, idx) => {
+            let btn = document.createElement('button');
+            btn.className = 'choice-btn';
+            btn.innerText = txt;
+            btn.onclick = () => checkQuiz(idx, data.corr, btn);
+            optsDiv.appendChild(btn);
+        });
+    }
+
+    function checkQuiz(selIdx, corrIdx, clickedBtn) {
+        const allBtns = document.querySelectorAll('#quizOptions .choice-btn');
+        allBtns.forEach(b => b.disabled = true);
+        allBtns[corrIdx].style.background = "#d4edda";
+        allBtns[corrIdx].style.borderColor = "#27ae60";
+        if(selIdx !== corrIdx) {
+            clickedBtn.style.background = "#f8d7da";
+            clickedBtn.style.borderColor = "#c0392b";
+        }
+        document.getElementById('nextQuestionBtn').style.display = 'block';
+    }
+
+    function nextQuestion() {
+        document.getElementById('nextQuestionBtn').style.display = 'none';
+        quizIndex++;
+        loadQuiz(); 
+    }
+
+    // --- REITER 3 LOGIK (MATRIX) ---
+    function handleDrop(e) {
+        e.preventDefault();
+        let target = e.target.closest('.drop-zone');
+        if (target && draggedItem) {
+            draggedItem.classList.remove('cat-1-color', 'cat-2-color', 'cat-3-color');
+            target.appendChild(draggedItem);
+        }
+    }
+
+    function solveMatrix() {
+        document.querySelectorAll('.draggable-item').forEach(item => {
+            let cat = item.dataset.cat;
+            item.classList.remove('cat-1-color', 'cat-2-color', 'cat-3-color');
+            item.classList.add('cat-' + cat + '-color');
+        });
+    }
+</script>
+
+</body>
+</html>
